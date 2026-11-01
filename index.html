@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EGENSIBOT OS - J.A.R.V.I.S. Interface</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Orbitron', 'Rajdhani', sans-serif;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      background: #010409;
+      color: #38bdf8;
+      overflow: hidden;
+    }
+
+    /* ÖZEL ŞIK KAYDIRMA ÇUBUĞU (SCROLLBAR) */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(3, 7, 18, 0.8);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #0284c7;
+      border-radius: 3px;
+      box-shadow: 0 0 10px #38bdf8;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8;
+    }
+
+    .grid-bg {
+      position: absolute;
+      width: 100vw;
+      height: 100vh;
+      background: 
+        radial-gradient(circle at center, rgba(56, 189, 248, 0.1) 0%, transparent 70%),
+        linear-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
+      background-size: 100% 100%, 40px 40px, 40px 40px;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* MATRIX RAIN OVERLAY */
+    #introOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #020617;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 1.2s ease-out, visibility 1.2s;
+    }
+
+    #matrixCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      opacity: 0.35;
+    }
+
+    .intro-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .big-reactor {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .ring-outer {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 4px dashed #38bdf8;
+      box-shadow: 0 0 40px #38bdf8;
+      animation: spinClockwise 10s linear infinite;
+    }
+
+    .ring-mid {
+      position: absolute;
+      width: 85%;
+      height: 85%;
+      border-radius: 50%;
+      border: 2px dotted #0284c7;
+      animation: spinCounter 5s linear infinite;
+    }
+
+    .ring-inner {
+      position: absolute;
+      width: 65%;
+      height: 65%;
+      border-radius: 50%;
+      border: 3px double #38bdf8;
+      box-shadow: inset 0 0 20px #38bdf8;
+      animation: spinClockwise 14s linear infinite;
+    }
+
+    .triangle-core {
+      width: 0;
+      height: 0;
+      border-left: 50px solid transparent;
+      border-right: 50px solid transparent;
+      border-bottom: 86px solid #38bdf8;
+      filter: drop-shadow(0 0 30px #38bdf8);
+      animation: pulseCore 1.2s infinite alternate;
+    }
+
+    @keyframes spinClockwise { 100% { transform: rotate(360deg); } }
+    @keyframes spinCounter { 100% { transform: rotate(-360deg); } }
+    @keyframes pulseCore {
+      0% { transform: scale(0.85); opacity: 0.5; }
+      100% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 50px #38bdf8); }
+    }
+
+    .intro-text {
+      margin-top: 35px;
+      font-size: 2.2rem;
+      letter-spacing: 8px;
+      font-weight: 900;
+      color: #f8fafc;
+      text-shadow: 0 0 20px #38bdf8, 0 0 40px #0284c7;
+      text-align: center;
+    }
+
+    .intro-subtext {
+      margin-top: 12px;
+      font-size: 1.1rem;
+      letter-spacing: 4px;
+      color: #38bdf8;
+      text-shadow: 0 0 10px #38bdf8;
+    }
+
+    /* ÖZEL TASARIM 8/D SINIF HUD PANELİ */
+    #classOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at center, rgba(15, 23, 42, 0.98) 0%, rgba(2, 6, 23, 1) 100%);
+      backdrop-filter: blur(20px);
+      z-index: 888;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.5s ease-in-out;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    #classOverlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .hud-cyber-box {
+      position: relative;
+      width: 90%;
+      max-width: 850px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      padding: 35px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 0 70px rgba(56, 189, 248, 0.25), inset 0 0 35px rgba(56, 189, 248, 0.08);
+      clip-path: polygon(0 0, 92% 0, 100% 8%, 100% 100%, 8% 100%, 0 92%);
+    }
+
+    .hud-cyber-box::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 40px;
+      height: 40px;
+      border-top: 3px solid #38bdf8;
+      border-left: 3px solid #38bdf8;
+    }
+
+    .hud-cyber-box::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 40px;
+      height: 40px;
+      border-bottom: 3px solid #38bdf8;
+      border-right: 3px solid #38bdf8;
+    }
+
+    .class-tag {
+      font-size: 0.85rem;
+      letter-spacing: 5px;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.12);
+      padding: 6px 20px;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+    }
+
+    .class-title-main {
+      font-size: 2.2rem;
+      letter-spacing: 6px;
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow: 0 0 20px #38bdf8, 0 0 40px #0284c7;
+      text-align: center;
+    }
+
+    .class-greeting {
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      color: #22c55e;
+      text-shadow: 0 0 15px rgba(34, 197, 94, 0.6);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .class-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .stat-card {
+      background: rgba(3, 7, 18, 0.8);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-card .val {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #38bdf8;
+      letter-spacing: 2px;
+    }
+
+    .stat-card .lbl {
+      font-size: 0.75rem;
+      color: #64748b;
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+
+    .cyber-close-btn {
+      margin-top: 10px;
+      padding: 12px 35px;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.5) 100%);
+      border: 1px solid #ef4444;
+      color: #f8fafc;
+      font-weight: bold;
+      letter-spacing: 3px;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+      clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+    }
+
+    .cyber-close-btn:hover {
+      background: #ef4444;
+      color: #000;
+      box-shadow: 0 0 35px #ef4444;
+    }
+
+    /* ESNEK HUD DÜZENİ */
+    .hud-container {
+      position: relative;
+      z-index: 2;
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 280px 1fr 280px;
+      grid-template-rows: 75px 1fr 85px;
+      gap: 15px;
+      padding: 15px;
+    }
+
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 8px;
+      padding: 0 25px;
+      background: linear-gradient(90deg, rgba(15, 23, 42, 0.9) 0%, rgba(3, 7, 18, 0.95) 50%, rgba(15, 23, 42, 0.9) 100%);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.15), inset 0 0 15px rgba(56, 189, 248, 0.05);
+      position: relative;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 10%;
+      width: 80%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+      box-shadow: 0 0 10px #38bdf8;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .sys-time {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #94a3b8;
+      border-right: 2px solid rgba(56, 189, 248, 0.3);
+      padding-right: 15px;
+    }
+
+    .title-logo {
+      font-size: 1.4rem;
+      font-weight: 900;
+      letter-spacing: 5px;
+      color: #f8fafc;
+      text-shadow: 0 0 12px #38bdf8, 0 0 25px #0284c7;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-logo span {
+      color: #38bdf8;
+      animation: pulseGlow 2s infinite alternate;
+    }
+
+    @keyframes pulseGlow {
+      0% { text-shadow: 0 0 10px #38bdf8; }
+      100% { text-shadow: 0 0 25px #38bdf8, 0 0 35px #0284c7; }
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .sys-status {
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      color: #22c55e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(34, 197, 94, 0.1);
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #22c55e;
+      animation: blink 1.2s infinite alternate;
+    }
+
+    @keyframes blink {
+      0% { opacity: 0.3; }
+      100% { opacity: 1; }
+    }
+
+    .hud-panel {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 8px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      backdrop-filter: blur(5px);
+      box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.05);
+      overflow-y: auto;
+    }
+
+    .panel-title {
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+      border-bottom: 1px solid #38bdf844;
+      padding-bottom: 5px;
+      color: #94a3b8;
+    }
+
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+    }
+
+    .bar-bg {
+      width: 100%;
+      height: 6px;
+      background: #0f172a;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: #38bdf8;
+      box-shadow: 0 0 8px #38bdf8;
+      transition: width 0.5s ease-in-out;
+    }
+
+    .main-screen {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      position: relative;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .chat-display {
+      flex: 1;
+      min-height: 0;
+      background: rgba(3, 7, 18, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 10px;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+    }
+
+    .message {
+      padding: 14px 18px;
+      border-radius: 6px;
+      line-height: 1.7;
+      font-size: 0.95rem;
+      max-width: 90%;
+      letter-spacing: 0.5px;
+      white-space: pre-line;
+      word-break: break-word;
+    }
+
+    .bot-message {
+      background: rgba(15, 23, 42, 0.95);
+      color: #e2e8f0;
+      border-left: 4px solid #38bdf8;
+      align-self: flex-start;
+    }
+
+    .user-message {
+      background: rgba(2, 132, 199, 0.7);
+      color: #fff;
+      border-right: 4px solid #38bdf8;
+      align-self: flex-end;
+    }
+
+    .research-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px dashed #f59e0b;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: #fbbf24;
+      animation: pulse-border 1.5s infinite alternate;
+    }
+
+    @keyframes pulse-border {
+      0% { border-color: rgba(245, 158, 11, 0.3); }
+      100% { border-color: rgba(245, 158, 11, 1); }
+    }
+
+    .input-zone {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 12px 20px;
+      border-radius: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 6px;
+      border: 1px solid #1e293b;
+      background: #030712;
+      color: #38bdf8;
+      outline: none;
+      font-size: 1rem;
+      letter-spacing: 1px;
+    }
+
+    input[type="text"]:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+    }
+
+    button {
+      padding: 12px 26px;
+      border: none;
+      border-radius: 6px;
+      background: #0284c7;
+      color: #ffffff;
+      font-weight: bold;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+      background: #38bdf8;
+      color: #000;
+      box-shadow: 0 0 20px #38bdf8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="grid-bg"></div>
+
+  <!-- INTRO EKRANI -->
+  <div id="introOverlay">
+    <canvas id="matrixCanvas"></canvas>
+    <div class="intro-content">
+      <div class="big-reactor">
+        <div class="ring-outer"></div>
+        <div class="ring-mid"></div>
+        <div class="ring-inner"></div>
+        <div class="triangle-core"></div>
+      </div>
+      <div class="intro-text" id="introText">INITIALIZING SYSTEM...</div>
+      <div class="intro-subtext" id="introSubtext">SYSTEM CHECK // LOADING CORE MODULES</div>
+    </div>
+  </div>
+
+  <!-- ÖZEL SİBER 8/D SINIF EKRANI OVERLAY -->
+  <div id="classOverlay">
+    <div class="hud-cyber-box">
+      <div class="class-tag">CLASS PROTOCOL // 8-D MODULE</div>
+      
+      <div class="big-reactor" style="width: 100px; height: 100px;">
+        <div class="ring-outer"></div>
+        <div class="ring-inner"></div>
+        <div class="triangle-core" style="border-left-width: 18px; border-right-width: 18px; border-bottom-width: 30px;"></div>
+      </div>
+
+      <div class="class-title-main">CLASS 8/D DASHBOARD</div>
+      
+      <div class="class-greeting" id="classGreetingText">
+        MERHABA DEĞERLİ ÖĞRETMENİM VE DEĞERLİ ARKADAŞLARIM!<br>
+        <span style="color: #38bdf8; font-size: 1rem;">SİZE YARDIMCI OLMAK İÇİN BURADAYIM, SİZE NASIL YARDIMCI OLABİLİRİM?</span>
+      </div>
+
+      <div class="class-stats-grid">
+        <div class="stat-card">
+          <div class="val">8/D</div>
+          <div class="lbl">SINIF ŞUBESİ</div>
+        </div>
+        <div class="stat-card">
+          <div class="val">ACTIVE</div>
+          <div class="lbl">SUNUM MODU</div>
+        </div>
+        <div class="stat-card">
+          <div class="val">EGENSIBOT</div>
+          <div class="lbl">YAPAY ZEKA PROTOKOLÜ</div>
+        </div>
+      </div>
+
+      <button class="cyber-close-btn" onclick="closeClassMode()">▶ ANA HUD PANOLARINA DÖN</button>
+    </div>
+  </div>
+
+  <!-- ANA HUD -->
+  <div class="hud-container">
+    <header>
+      <div class="header-left">
+        <div class="sys-time" id="liveClock">00:00:00</div>
+        <div class="title-logo"><span>⚡</span> EGENSIBOT </div>
+      </div>
+      <div class="header-right">
+        <div class="sys-status">
+          <div class="status-dot"></div>
+          SYSTEM ACTIVE // SECURE CONNECTION
+        </div>
+      </div>
+    </header>
+
+    <!-- GÜNCELLENMİŞ SOL PANEL (INTERNET SPEED EKLENDİ) -->
+    <div class="hud-panel">
+      <div class="panel-title">SYSTEM DIAGNOSTICS</div>
+      <div>
+        <div class="metric-row"><span>CPU USAGE</span><span>34%</span></div>
+        <div class="bar-bg"><div class="bar-fill" style="width: 34%;"></div></div>
+      </div>
+      <div>
+        <div class="metric-row"><span>MEMORY (RAM)</span><span>6.8 GB / 16 GB</span></div>
+        <div class="bar-bg"><div class="bar-fill" style="width: 42%;"></div></div>
+      </div>
+      <div>
+        <div class="metric-row"><span>INTERNET SPEED</span><span id="netSpeedText">94.2 Mbps</span></div>
+        <div class="bar-bg"><div class="bar-fill" id="netSpeedBar" style="width: 85%;"></div></div>
+      </div>
+      <div>
+        <div class="metric-row"><span>NEURAL CORE</span><span>ONLINE</span></div>
+        <div class="bar-bg"><div class="bar-fill" style="width: 88%;"></div></div>
+      </div>
+    </div>
+
+    <!-- ORTA CHAT ALANI -->
+    <div class="main-screen">
+      <div class="chat-display" id="chatBox"></div>
+    </div>
+
+    <!-- SAĞ PANEL -->
+    <div class="hud-panel">
+      <div class="panel-title">RESEARCH DATABASE</div>
+      <div style="font-size:0.8rem; line-height: 1.5; color: #64748b;">
+        • IEEE Xplore Index<br>
+        • MIT AI Policy Review<br>
+        • Stanford HAI Reports<br>
+        • Nature Machine Intelligence
+      </div>
+      <div class="panel-title">ENVIRONMENT</div>
+      <div style="font-size:0.85rem; color: #38bdf8;">
+        LATENCY: 12ms<br>
+        SECURITY: LEVEL 5<br>
+        VOICE: ACTIVE
+      </div>
+    </div>
+
+    <!-- GİRİŞ KUTUSU -->
+    <div class="input-zone">
+      <input type="text" id="userInput" placeholder="Mesajınızı veya komutunuzu girin... (Örn: sınıf)" onkeydown="if(event.key==='Enter') sendMessage()">
+      <button onclick="sendMessage()">GÖNDER</button>
+    </div>
+  </div>
+
+  <script>
+    const introOverlay = document.getElementById('introOverlay');
+    const classOverlay = document.getElementById('classOverlay');
+    const introText = document.getElementById('introText');
+    const introSubtext = document.getElementById('introSubtext');
+    const chatBox = document.getElementById('chatBox');
+    const userInput = document.getElementById('userInput');
+
+    // CANLI İNTERNET HIZI SİMÜLASYONU
+    function updateNetSpeed() {
+      const speed = (85 + Math.random() * 20).toFixed(1);
+      const netText = document.getElementById('netSpeedText');
+      const netBar = document.getElementById('netSpeedBar');
+      if (netText && netBar) {
+        netText.textContent = `${speed} Mbps`;
+        netBar.style.width = `${Math.min(100, (speed / 120) * 100)}%`;
+      }
+    }
+    setInterval(updateNetSpeed, 3000);
+
+    // MATRIX CANVAS
+    const canvas = document.getElementById('matrixCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピ0123456789EGENSIBOTJARVIS';
+    const alphabet = katakana.split('');
+    const fontSize = 16;
+    const columns = canvas.width / fontSize;
+    const rainDrops = Array(Math.floor(columns)).fill(1);
+
+    function drawMatrix() {
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.08)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = fontSize + 'px Orbitron';
+
+      for (let i = 0; i < rainDrops.length; i++) {
+        const text = alphabet[Math.floor(Math.random() * alphabet.length)];
+        ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+        if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          rainDrops[i] = 0;
+        }
+        rainDrops[i]++;
+      }
+    }
+    const matrixInterval = setInterval(drawMatrix, 30);
+
+    // SAAT
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('liveClock').textContent = 
+        `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Ses Efektleri
+    function playSound(freq = 800, type = 'sine', duration = 0.15) {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    // Sesli Okuma Fonksiyonu
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'tr-TR';
+        utterance.rate = 0.95;
+        utterance.pitch = 0.9;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    // Mesaj Ekleme ve Otomatik En Alta Kaydırma
+    function appendMessage(sender, text) {
+      const msgDiv = document.createElement('div');
+      msgDiv.classList.add('message');
+      msgDiv.classList.add(sender === 'bot' ? 'bot-message' : 'user-message');
+      msgDiv.textContent = text;
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      return msgDiv;
+    }
+
+    // Daktilo Efekti
+    function typeWriter(element, text, speed = 10, callback = null) {
+      let index = 0;
+      element.textContent = "EGENSIBOT: ";
+
+      const timer = setInterval(() => {
+        if (index < text.length) {
+          element.textContent += text.charAt(index);
+          index++;
+          chatBox.scrollTop = chatBox.scrollHeight;
+        } else {
+          clearInterval(timer);
+          if (callback) callback();
+        }
+      }, speed);
+    }
+
+    // AÇILIŞ DÖNGÜSÜ
+    window.addEventListener('load', () => {
+      playSound(500, 'sine', 0.2);
+
+      setTimeout(() => {
+        introText.textContent = "ACCESS GRANTED";
+        introText.style.color = "#22c55e";
+        introSubtext.textContent = "WELCOME TO EGENSIBOT PROTOCOL";
+        introSubtext.style.color = "#22c55e";
+        playSound(1200, 'triangle', 0.4);
+      }, 2200);
+
+      setTimeout(() => {
+        introOverlay.style.opacity = '0';
+        setTimeout(() => {
+          introOverlay.style.visibility = 'hidden';
+          clearInterval(matrixInterval);
+          
+          const welcomeSpeech = "Hoş geldiniz efendim. Ben Egensibot, tüm sistemler emrinizde.";
+          appendMessage('bot', `EGENSIBOT: ${welcomeSpeech}`);
+          speakText(welcomeSpeech);
+        }, 1200);
+      }, 4200);
+    });
+
+    // SOHBET SÖZLÜĞÜ
+    const chatResponses = {
+      "sa": "Aleykümselam efendim, hoş geldiniz!",
+      "selam": "Aleykümselam! Nasıl yardımcı olabilirim?",
+      "selamun aleykum": "Aleykümselam efendim, sistemler emrinizde.",
+      "naber": "İyiyim efendim, sistemlerim %100 kapasiteyle çalışıyor. Siz nasılsınız?",
+      "nasılsın": "Teşekkür ederim, tüm nöral çekirdeklerim sorunsuz çalışıyor. Siz nasılsınız?",
+      "iyi": "Bunu duyduğuma sevindim efendim!",
+      "iyiyim": "Harika! Size nasıl yardımcı olabilirim?",
+      "kimsin": "Ben Egensibot; gelişmiş bir araştırma ve analiz yapay zekası protokolüyüm.",
+      "eyvallah": "Rica ederim efendim, ne demek!",
+      "teşekkürler": "Rica ederim efendim, her zaman hizmetinizdeyim."
+    };
+
+    // MESAJ GÖNDERME MANTIĞI
+    function sendMessage() {
+      const rawQuery = userInput.value.trim();
+      if (!rawQuery) return;
+
+      const lowerQuery = rawQuery.toLowerCase();
+      playSound(700, 'square', 0.08);
+      appendMessage('user', rawQuery);
+      userInput.value = '';
+
+      // 1. "sınıf" Komutu Kontrolü
+      if (lowerQuery === 'sınıf' || lowerQuery === 'sinif') {
+        openClassMode();
+        return;
+      }
+
+      // 2. Günlük Sohbet Kontrolü
+      if (chatResponses[lowerQuery]) {
+        setTimeout(() => {
+          const reply = chatResponses[lowerQuery];
+          appendMessage('bot', `EGENSIBOT: ${reply}`);
+          speakText(reply);
+        }, 400);
+        return;
+      }
+
+      // 3. Özel "Hünerler" Komutu
+      if (lowerQuery === 'hünerler') {
+        runDeepAiResearch();
+        return;
+      }
+
+      // 4. Genel Araştırma
+      runDynamicResearch(rawQuery);
+    }
+
+    // SINIF EKRANI AÇMA
+    function openClassMode() {
+      playSound(1500, 'sawtooth', 0.4);
+      classOverlay.classList.add('active');
+
+      const classSpeechText = "Merhaba değerli öğretmenim ve değerli arkadaşlarım! Size yardımcı olmak için buradayım, size nasıl yardımcı olabilirim?";
+      appendMessage('bot', `EGENSIBOT [8/D MODU]: ${classSpeechText}`);
+      speakText(classSpeechText);
+    }
+
+    // SINIF EKRANINDAN ÇIKIŞ
+    function closeClassMode() {
+      playSound(800, 'sine', 0.2);
+      classOverlay.classList.remove('active');
+      speakText("Ana ekrana dönüldü efendim.");
+    }
+
+    // "HÜNERLER" ÖZEL ARAŞTIRMASI
+    function runDeepAiResearch() {
+      playSound(1400, 'sawtooth', 0.3);
+      
+      const cardContainer = document.createElement('div');
+      cardContainer.className = 'message bot-message research-card';
+      cardContainer.textContent = "[ HÜNERLER // AKADEMİK YAPAY ZEKA RAPORU BAŞLATILDI ]\n• IEEE Xplore, MIT Science & Oxford veritabanları taranıyor...\n• Yapay zeka ve otomasyon makaleleri inceleniyor...";
+      chatBox.appendChild(cardContainer);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      setTimeout(() => {
+        cardContainer.textContent += "\n✔ Taramalar tamamlandı. Rapor derleniyor...";
+        playSound(1800, 'sine', 0.2);
+      }, 2500);
+
+      setTimeout(() => {
+        const reportElement = appendMessage('bot', '');
+        
+        const fullArticleText = `
+GENİŞ ÇAPLI AKADEMİK ARAŞTIRMA RAPORU: YAPAY ZEKA İNSANLARIN YERİNİ ALABİLİR Mİ?
+
+1. GİRİŞ VE MEVCUT ENDÜSTRİYEL OTOMASYON
+Son akademik çalışmalara göre yapay zeka; teknik hesaplamalar, kod yazımı ve veri analitiğinde insan yeteneklerini aşmıştır.
+
+2. AŞILAMAYAN İNSANİ BOYUTLAR
+- Özgün Yaratıcılık: Sıfırdan felsefi ve sanatsal bir akım yaratılamaz.
+- Duygusal Zeka & Empati: Bilince sahip bir empati kurulamaz.
+- Etik & Vicdan: Ahlaki ikilemlerde kararlar algoritmalara bırakılamaz.
+
+3. SONUÇ
+Yapay zeka insanların yerini tamamen almayacak; ancak yapay zekayı verimli kullanan insanlar, kullanamayanların yerini alacaktır.
+`;
+
+        const speechSummary = "Efendim, geniş çaplı araştırmanın özetini okuyorum: Yapay zeka insanların yerini tamamen almayacak; ancak yapay zekayı bir araç olarak en efektif şekilde kullanan insanlar, bu teknolojiden uzak kalanların yerini alacaktır.";
+
+        typeWriter(reportElement, fullArticleText, 10, () => {
+          speakText(speechSummary);
+        });
+
+      }, 5000);
+    }
+
+    // DİĞER KONULAR İÇİN TARAMA
+    function runDynamicResearch(topic) {
+      playSound(1400, 'sawtooth', 0.3);
+      
+      const cardContainer = document.createElement('div');
+      cardContainer.className = 'message bot-message research-card';
+      cardContainer.textContent = `[ AKADEMİK VERİ TABANI TARAMASI: "${topic.toUpperCase()}" ]\n• IEEE Xplore ve Global Veritabanları taranıyor...`;
+      chatBox.appendChild(cardContainer);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      setTimeout(() => {
+        cardContainer.textContent += `\n✔ "${topic}" konusuna ait veriler derlendi. Rapor hazırlanıyor...`;
+        playSound(1800, 'sine', 0.2);
+      }, 2000);
+
+      setTimeout(() => {
+        const reportElement = appendMessage('bot', '');
+        
+        const fullArticleText = `
+DETAYLI ARAŞTIRMA VE ANALİZ RAPORU: ${topic.toUpperCase()}
+
+1. AKADEMİK ÇERÇEVE
+"${topic}" başlığı altında yapılan küresel taramalar, bu alanın bilim dünyasında stratejik bir öneme sahip olduğunu göstermektedir.
+
+2. TEKNİK SİMÜLASYON VE GELECEK ÖNGÖRÜSÜ
+Yapılan analizler, bu konunun verimlilik ve inovasyon süreçlerine doğrudan katkı sağladığını ortaya koymaktadır.
+
+3. SONUÇ
+Tüm veriler doğrultusunda; "${topic}" konusu geleceğin vizyon projeleri arasında öncelikli bir yere sahiptir.
+`;
+
+        const speechSummary = `Efendim, "${topic}" konusu üzerine yaptığım araştırmanın özetini okuyorum: Elde edilen veriler, bu alanın geleceğin stratejik teknolojilerinde öncelikli bir yere sahip olduğunu göstermektedir.`;
+
+        typeWriter(reportElement, fullArticleText, 10, () => {
+          speakText(speechSummary);
+        });
+
+      }, 4000);
+    }
+  </script>
+</body>
+</html>
